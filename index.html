@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PPTX2HTML — PowerPoint to single-file HTML slideshow</title>
 <meta name="description" content="Convert a PowerPoint (.pptx) into one self-contained HTML slideshow — restyled, animated, offline-ready. Everything happens in your browser.">
-<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/app.css?v=4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📽️</text></svg>">
 </head>
 <body>
@@ -77,6 +77,14 @@
       <div class="options-body">
 
         <div class="opt-group">
+          <h3>Slide layout</h3>
+          <div class="field">
+            <div class="seg" id="opt-mode" data-opts='[["faithful","Original layout"],["restyle","Clean restyle"]]'></div>
+            <div class="hint" id="mode-hint"></div>
+          </div>
+        </div>
+
+        <div class="opt-group">
           <h3>Theme</h3>
           <div class="field">
             <div class="swatches" id="theme-swatches"></div>
@@ -87,7 +95,7 @@
           </details>
         </div>
 
-        <div class="opt-group">
+        <div class="opt-group" id="group-typography">
           <h3>Typography</h3>
           <div class="field">
             <select id="opt-font">
@@ -152,14 +160,14 @@
             <label class="f-label">Slide transition</label>
             <div class="seg" id="opt-transition" data-opts='[["fade","Fade"],["slide","Slide"],["zoom","Zoom"],["none","None"]]'></div>
           </div>
-          <label class="check"><input type="checkbox" id="opt-underline"> <span>Animated accent line under titles</span></label>
-          <label class="check"><input type="checkbox" id="opt-corners"> <span>Corner frame on the title slide</span></label>
+          <label class="check" id="row-underline"><input type="checkbox" id="opt-underline"> <span>Animated accent line under titles</span></label>
+          <label class="check" id="row-corners"><input type="checkbox" id="opt-corners"> <span>Corner frame on the title slide</span></label>
           <label class="check" id="notes-check"><input type="checkbox" id="opt-notes"> <span>Include speaker notes <small>press N while presenting to peek at them</small></span></label>
         </div>
 
         <div class="opt-group">
           <h3>Images</h3>
-          <label class="check"><input type="checkbox" id="opt-compress" checked> <span>Compress large images <small>recommended — keeps the file easy to email</small></span></label>
+          <label class="check" id="row-compress"><input type="checkbox" id="opt-compress" checked> <span>Compress large images <small>recommended — keeps the file easy to email (Clean restyle mode)</small></span></label>
         </div>
 
       </div>
@@ -204,10 +212,14 @@
 </div>
 
 <script src="js/jszip.min.js"></script>
-<script src="js/pptx-extract.js"></script>
-<script src="js/backgrounds.js"></script>
-<script src="js/deck-builder.js"></script>
-<script src="js/app.js"></script>
+<script src="js/legacy/d3.min.js"></script>
+<script src="js/legacy/nv.d3.min.js"></script>
+<script src="js/legacy/nv-css.js?v=4"></script>
+<script src="js/pptx-extract.js?v=4"></script>
+<script src="js/faithful-renderer.js?v=4"></script>
+<script src="js/backgrounds.js?v=4"></script>
+<script src="js/deck-builder.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 
 </body>
 </html>

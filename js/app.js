@@ -154,10 +154,29 @@
     state.buffer = buffer;
     state.fileName = name;
     setProgress(0, 1, 'Opening ' + name + '…');
-    PptxExtract.parse(buffer, {
+
+    // two pipelines: pixel-faithful rendering (worker) + content extraction
+    // (main thread, for restyle mode / notes / stats / deck theme colors)
+    var faithfulP = FaithfulRenderer.render(buffer, { onProgress: setProgress })
+      .catch(function (err) { return { error: (err && err.message) || String(err) }; });
+    var extractP = PptxExtract.parse(buffer, {
       compressImages: $('opt-compress').checked,
       onProgress: setProgress
-    }).then(function (content) {
+    });
+
+    Promise.all([extractP, faithfulP]).then(function (res) {
+      var content = res[0], faithful = res[1];
+      if (faithful && !faithful.error) {
+        content.faithful = faithful;
+        if (faithful.hasCharts === false && faithful.chartsOk === false) {
+          content.warnings.push('Some charts could not be drawn and may appear empty.');
+        }
+      } else {
+        content.faithful = null;
+        content.warnings.unshift('Original-layout rendering failed for this file (' +
+          (faithful && faithful.error) + ') — showing the Clean restyle instead.');
+        state.options.mode = 'restyle';
+      }
       state.content = content;
       onParsed();
     }).catch(function (err) {
@@ -186,13 +205,8 @@
 
     // meta line
     els.deckName.textContent = state.fileName;
-    var s = c.stats;
-    var bits = [s.slides + ' slides'];
-    if (s.images) bits.push(s.images + (s.images === 1 ? ' image' : ' images'));
-    if (s.tables) bits.push(s.tables + (s.tables === 1 ? ' table' : ' tables'));
-    if (s.charts) bits.push(s.charts + ' chart' + (s.charts === 1 ? '' : 's') + ' (placeholder)');
-    if (s.notes) bits.push('speaker notes on ' + s.notes);
-    els.deckStats.textContent = bits.join(' · ');
+    updateStatsLine();
+    syncModeUI();
 
     // warnings
     els.warningsList.textContent = '';
@@ -210,6 +224,34 @@
     els.landing.style.display = 'none';
     els.studio.classList.add('show');
     rebuild(true);
+  }
+
+  function updateStatsLine() {
+    if (!state.content) return;
+    var s = state.content.stats;
+    var faithfulOn = state.options.mode === 'faithful' && state.content.faithful;
+    var bits = [s.slides + ' slides'];
+    if (s.images) bits.push(s.images + (s.images === 1 ? ' image' : ' images'));
+    if (s.tables) bits.push(s.tables + (s.tables === 1 ? ' table' : ' tables'));
+    if (s.charts) bits.push(s.charts + ' chart' + (s.charts === 1 ? '' : 's') +
+      (faithfulOn ? '' : ' (placeholder)'));
+    if (s.notes) bits.push('speaker notes on ' + s.notes);
+    els.deckStats.textContent = bits.join(' · ');
+  }
+
+  function syncModeUI() {
+    var faithfulMode = state.options.mode === 'faithful';
+    $('mode-hint').textContent = faithfulMode
+      ? 'Slides keep their exact PowerPoint design. Theme colors style the backdrop, navigation and background effects.'
+      : 'Content is re-flowed into a clean modern template — best for simple text-and-bullet decks.';
+    // these options only affect the restyle template
+    ['group-typography', 'row-underline', 'row-corners', 'row-compress'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.classList.toggle('disabled', faithfulMode);
+    });
+    // gray the faithful choice out if rendering failed for this file
+    var fbtn = document.querySelector('#opt-mode button[data-value="faithful"]');
+    if (fbtn) fbtn.disabled = !!state.content && !state.content.faithful;
   }
 
   // ----------------------------------------------------------------- swatches
@@ -303,6 +345,11 @@
   function wireOptions() {
     var o = state.options;
 
+    initSeg('opt-mode', function () { return o.mode; }, function (v) {
+      o.mode = v;
+      syncModeUI();
+      updateStatsLine();
+    });
     initSeg('opt-placement', function () { return o.nav.placement; }, function (v) { o.nav.placement = v; });
     initSeg('opt-shape', function () { return o.nav.shape; }, function (v) { o.nav.shape = v; });
     initSeg('opt-labels', function () { return o.nav.labels; }, function (v) { o.nav.labels = v; });
@@ -387,13 +434,15 @@
       resetPanelDom();
       wireOptions();
       renderSwatches();
+      syncModeUI();
+      updateStatsLine();
       rebuild();
     });
   }
 
   // Drop all listeners/options so wireOptions() can run again cleanly.
   function resetPanelDom() {
-    ['opt-placement', 'opt-shape', 'opt-labels', 'opt-effect-show', 'opt-transition',
+    ['opt-mode', 'opt-placement', 'opt-shape', 'opt-labels', 'opt-effect-show', 'opt-transition',
      'opt-effect'].forEach(function (id) {
       var el = $(id);
       var clone = el.cloneNode(false);
@@ -475,5 +524,6 @@
   restoreOptions();
   wireOptions();
   renderSwatches();
+  syncModeUI();
 
 })();

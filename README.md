@@ -11,6 +11,19 @@ are all embedded, so the file works offline and survives being emailed.
 Everything runs **entirely in your browser**. Your presentation is never
 uploaded to any server.
 
+Two conversion modes
+----
+
+* **Original layout** (default) — slides keep their exact PowerPoint design:
+  positions, shapes, colors, icons, tables, even charts (rendered once and
+  embedded as static SVG). Powered by the battle-tested renderer from the
+  original PPTX2HTML project, framed by this tool's navigation, theming and
+  background effects. Theme colors style the backdrop and controls; the
+  slides stay yours.
+* **Clean restyle** — your content (titles, bullets, images, tables, notes)
+  re-flowed into a clean, modern, fully themeable template. Best for simple
+  text-and-bullet decks you want to give a fresh coat of paint.
+
 What the exported deck does
 ----
 

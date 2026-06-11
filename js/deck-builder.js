@@ -26,6 +26,7 @@
   };
 
   var DEFAULTS = {
+    mode: 'faithful',                    // faithful (original layout) | restyle
     title: 'Slideshow',
     theme: {
       bg: '#0b1220', bg2: '#101a30', text: '#e8eefc', muted: '#93a4c4',
@@ -149,6 +150,55 @@
     return html + '</section>';
   }
 
+  // -------------------------------------------------- faithful-mode pieces
+
+  // Slide-content styles the legacy renderer's markup relies on
+  // (adapted from the original project's pptx2html.css, scoped to .pslide).
+  var PSLIDE_CSS = [
+    '.pslide{position:relative;text-align:center;overflow:hidden;flex:none;',
+    '  border-radius:8px;box-shadow:0 26px 90px rgba(0,0,0,.5);',
+    '  transform:scale(var(--pscale,1));transform-origin:center center}',
+    '.pslide div.block{position:absolute;top:0;left:0;width:100%}',
+    '.pslide div.content{display:flex;flex-direction:column}',
+    '.pslide div.v-up{justify-content:flex-start}',
+    '.pslide div.v-mid{justify-content:center}',
+    '.pslide div.v-down{justify-content:flex-end}',
+    '.pslide div.h-left{align-items:flex-start;text-align:left}',
+    '.pslide div.h-mid{align-items:center;text-align:center}',
+    '.pslide div.h-right{align-items:flex-end;text-align:right}',
+    '.pslide div.up-left{justify-content:flex-start;align-items:flex-start;text-align:left}',
+    '.pslide div.up-center{justify-content:flex-start;align-items:center}',
+    '.pslide div.up-right{justify-content:flex-start;align-items:flex-end}',
+    '.pslide div.center-left{justify-content:center;align-items:flex-start;text-align:left}',
+    '.pslide div.center-center{justify-content:center;align-items:center}',
+    '.pslide div.center-right{justify-content:center;align-items:flex-end}',
+    '.pslide div.down-left{justify-content:flex-end;align-items:flex-start;text-align:left}',
+    '.pslide div.down-center{justify-content:flex-end;align-items:center}',
+    '.pslide div.down-right{justify-content:flex-end;align-items:flex-end}',
+    '.pslide table{position:absolute;border-collapse:collapse}',
+    '.pslide table,.pslide th,.pslide td{border:1px solid black}',
+    '.pslide svg.drawing{position:absolute;overflow:visible}',
+    '.slide.s-faithful{padding:0}'
+  ].join('\n');
+
+  function faithfulCss(faithful) {
+    var out = PSLIDE_CSS + '\n' + (faithful.globalCss || '');
+    if (faithful.hasCharts && global.NV_D3_CSS) out += '\n' + global.NV_D3_CSS;
+    return out;
+  }
+
+  function faithfulFitJs(slideSize) {
+    return [
+      'var PW=' + Math.round(slideSize.width) + ',PH=' + Math.round(slideSize.height) + ';',
+      'function fitSlides(){',
+      '  var s=Math.min((window.innerWidth-60)/PW,(window.innerHeight-110)/PH);',
+      '  document.documentElement.style.setProperty("--pscale",Math.min(s,2.2));',
+      '}',
+      'window.addEventListener("resize",fitSlides);',
+      'fitSlides();'
+    ].join('\n');
+  }
+
   // ------------------------------------------------------------------ CSS
 
   function css(opt, hasCanvas, hasNotes) {
@@ -170,7 +220,11 @@
       zoom: '@keyframes slideIn{from{opacity:0;transform:scale(.955)}to{opacity:1;transform:scale(1)}}',
       none: ''
     };
-    var slideAnim = opt.transition === 'none' ? '' : 'animation:slideIn .55s cubic-bezier(.22,.8,.3,1) both;';
+    // The fade rides on a temporary .anim class (added per slide change,
+    // removed by a timer) so a slide is NEVER invisible just because the
+    // animation clock is throttled (background tabs, embeds, screenshots).
+    var slideAnim = opt.transition === 'none' ? '' :
+      '.slide.active.anim{animation:slideIn .55s cubic-bezier(.22,.8,.3,1) both}';
 
     return [
       ':root{',
@@ -189,7 +243,8 @@
       transitions[opt.transition] || transitions.fade,
       '.slide{position:fixed;inset:0;width:100vw;height:100vh;display:none;z-index:1;',
       '  align-items:center;justify-content:center;padding:4vh 5vw}',
-      '.slide.active{display:flex;' + slideAnim + '}',
+      '.slide.active{display:flex}',
+      slideAnim,
       '.wrap{max-width:1080px;width:100%;position:relative}',
       '.wrap.center{text-align:center}',
       /* ----- typography ----- */
@@ -306,9 +361,15 @@
       "if(tot)tot.textContent=total;if(npTot)npTot.textContent=total;",
       hasNotes ? "var NOTES=" + JSON.stringify(notesArr).replace(/</g, '\\u003c') + ";" : "",
       hasNotes ? "var notesPanel=document.getElementById('notes-panel'),notesBody=document.getElementById('notes-body');" : "",
+      "var animTimer=null;",
       "function showSlide(n){",
       "  if(n<0)n=0;if(n>=total)n=total-1;",
-      "  for(var i=0;i<slides.length;i++)slides[i].classList.toggle('active',i===n);",
+      "  for(var i=0;i<slides.length;i++){slides[i].classList.toggle('active',i===n);slides[i].classList.remove('anim');}",
+      opt.transition !== 'none' ? [
+        "  slides[n].classList.add('anim');",
+        "  clearTimeout(animTimer);",
+        "  animTimer=setTimeout(function(){slides[n].classList.remove('anim');},700);"
+      ].join('\n') : "",
       "  current=n;",
       "  if(cur)cur.textContent=n+1;if(npCur)npCur.textContent=n+1;",
       "  if(prev)prev.disabled=n===0;if(next)next.disabled=n===total-1;",
@@ -363,19 +424,25 @@
   function build(content, options) {
     var opt = merge(DEFAULTS, options || {});
     var slides = content.slides || [];
+    var faithful = (opt.mode === 'faithful' && content.faithful &&
+      content.faithful.slides && content.faithful.slides.length) ? content.faithful : null;
+    var slideCount = faithful ? faithful.slides.length : slides.length;
     var hasCanvas = opt.effect !== 'none' && global.Backgrounds && !!global.Backgrounds.source(opt.effect);
 
-    // per-slide canvas visibility
-    var dataBgs = slides.map(function (s) {
-      if (!hasCanvas) return 'hidden';
-      var isFeature = s.type === 'title' || s.type === 'section';
-      if (opt.effectShow === 'all') return 'feature';
-      if (opt.effectShow === 'title') return isFeature ? 'feature' : 'hidden';
-      return isFeature ? 'feature' : 'subtle'; // title-subtle
-    });
+    // per-slide canvas visibility (faithful mode: first slide is the title)
+    var dataBgs = [];
+    for (var di = 0; di < slideCount; di++) {
+      var isFeature = faithful
+        ? di === 0
+        : (slides[di].type === 'title' || slides[di].type === 'section');
+      if (!hasCanvas) dataBgs.push('hidden');
+      else if (opt.effectShow === 'all') dataBgs.push('feature');
+      else if (opt.effectShow === 'title') dataBgs.push(isFeature ? 'feature' : 'hidden');
+      else dataBgs.push(isFeature ? 'feature' : 'subtle'); // title-subtle
+    }
 
     var notesArr = null;
-    if (opt.includeNotes) {
+    if (opt.includeNotes && slides.length === slideCount) {
       var any = slides.some(function (s) { return s.notes; });
       if (any) notesArr = slides.map(function (s) { return s.notes || ''; });
     }
@@ -386,13 +453,21 @@
     parts.push('<meta charset="UTF-8">');
     parts.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
     parts.push('<title>' + esc(opt.title) + '</title>');
-    parts.push('<style>' + css(opt, hasCanvas, !!notesArr) + '</style>');
+    parts.push('<style>' + css(opt, hasCanvas, !!notesArr) +
+      (faithful ? '\n' + faithfulCss(faithful) : '') + '</style>');
     parts.push('</head><body>');
 
     if (hasCanvas) parts.push('<canvas id="bg-canvas"></canvas>');
 
     parts.push('<div class="deck">');
-    slides.forEach(function (s, i) { parts.push(slideHtml(s, i, opt, dataBgs[i])); });
+    if (faithful) {
+      faithful.slides.forEach(function (sHtml, i) {
+        parts.push('<section class="slide s-faithful' + (i === 0 ? ' active' : '') +
+          '" data-bg="' + dataBgs[i] + '">' + sHtml + '</section>');
+      });
+    } else {
+      slides.forEach(function (s, i) { parts.push(slideHtml(s, i, opt, dataBgs[i])); });
+    }
     parts.push('</div>');
 
     if (opt.nav.showTopCounter) {
@@ -408,6 +483,7 @@
 
     parts.push('<script>');
     parts.push(engineJs(opt, hasCanvas, notesArr));
+    if (faithful) parts.push(faithfulFitJs(faithful.slideSize));
     if (hasCanvas) {
       var bgConf = {
         accent: opt.theme.accent, accent2: opt.theme.accent2,

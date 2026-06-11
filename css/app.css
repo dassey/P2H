@@ -180,6 +180,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .check span { font-size: 0.88rem; }
 .check small { display: block; color: var(--muted); font-size: 0.76rem; margin-top: 1px; }
 .check.disabled { opacity: 0.45; pointer-events: none; }
+.opt-group.disabled { opacity: 0.45; pointer-events: none; }
+.seg button:disabled { opacity: 0.35; cursor: default; }
 
 .hint { font-size: 0.76rem; color: var(--muted); line-height: 1.5; margin-top: 6px; }
 

@@ -82,7 +82,7 @@
     return new Promise(function (resolve, reject) {
       var worker;
       try {
-        worker = new Worker('js/legacy/worker.js?v=4');
+        worker = new Worker('js/legacy/worker.js?v=5');
       } catch (e) {
         reject(new Error('Could not start the layout renderer: ' + e.message));
         return;

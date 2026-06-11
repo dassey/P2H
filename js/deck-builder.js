@@ -155,7 +155,11 @@
   // Slide-content styles the legacy renderer's markup relies on
   // (adapted from the original project's pptx2html.css, scoped to .pslide).
   var PSLIDE_CSS = [
+    // font-size/line-height/font replicate the original demo page (Bootstrap
+    // base styles) the legacy renderer's pixel math was calibrated against
     '.pslide{position:relative;text-align:center;overflow:hidden;flex:none;',
+    '  background-color:#fff;color:#000;',
+    '  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;line-height:1.42857143;',
     '  border-radius:8px;box-shadow:0 26px 90px rgba(0,0,0,.5);',
     '  transform:scale(var(--pscale,1));transform-origin:center center}',
     '.pslide div.block{position:absolute;top:0;left:0;width:100%}',
@@ -200,8 +204,12 @@
   }
 
   // ------------------------------------------------------------------ CSS
+  // forFaithful: emit only the deck chrome (backdrop, nav, counters, notes).
+  // The restyle template's content rules use generic class names (.content,
+  // .bullets, table…) that COLLIDE with the legacy renderer's markup — they
+  // must never reach a faithful deck.
 
-  function css(opt, hasCanvas, hasNotes) {
+  function css(opt, hasCanvas, hasNotes, forFaithful) {
     var t = opt.theme;
     var fxSubtle = (0.22 * opt.effectIntensity).toFixed(3);
     var fxFeature = (0.42 + 0.38 * opt.effectIntensity).toFixed(3);
@@ -245,9 +253,10 @@
       '  align-items:center;justify-content:center;padding:4vh 5vw}',
       '.slide.active{display:flex}',
       slideAnim,
+      /* ----- restyle template content (never emitted for faithful decks) ----- */
+      forFaithful ? '' : [
       '.wrap{max-width:1080px;width:100%;position:relative}',
       '.wrap.center{text-align:center}',
-      /* ----- typography ----- */
       'h1{font-size:clamp(2.3rem,6.5vw,5rem);line-height:1.08;letter-spacing:-.015em;font-weight:700}',
       '.s-title .subtitle{margin-top:26px;font-size:clamp(1.1rem,2.4vw,1.6rem);color:var(--muted);font-weight:300}',
       '.subtitle.small{margin-top:6px;color:var(--muted);font-size:clamp(1rem,1.8vw,1.2rem)}',
@@ -264,7 +273,6 @@
         '.s-title.active h1::after,.s-section.active .section-title::after{animation:growC .8s .2s cubic-bezier(.22,.8,.3,1) forwards}',
         '@keyframes growC{to{width:150px}}'
       ].join('\n') : '',
-      /* ----- content blocks ----- */
       '.content{margin-top:30px}',
       '.bullets{list-style:none;text-align:left;display:grid;gap:14px;margin-top:8px}',
       '.bullets li{font-size:clamp(1.05rem,2.1vw,1.45rem);line-height:1.5;padding-left:1.5em;position:relative;color:var(--text)}',
@@ -293,7 +301,6 @@
       '.stub{display:inline-flex;align-items:center;gap:10px;margin-top:26px;padding:14px 22px;border-radius:12px;',
       '  border:1.5px dashed color-mix(in srgb,var(--accent) 45%,transparent);color:var(--muted);font-size:1rem}',
       '.stub-note{font-size:.8rem;opacity:.65}',
-      /* ----- title corners ----- */
       opt.flairCorners ? [
         '.corner{position:absolute;width:34px;height:34px;border:2.5px solid var(--accent);opacity:.65}',
         '.corner.tl{top:-26px;left:-8px;border-right:none;border-bottom:none;border-radius:6px 0 0 0}',
@@ -301,6 +308,9 @@
         '.corner.bl{bottom:-26px;left:-8px;border-right:none;border-top:none;border-radius:0 0 0 6px}',
         '.corner.br{bottom:-26px;right:-8px;border-left:none;border-top:none;border-radius:0 0 6px 0}'
       ].join('\n') : '',
+      '@media (max-width:760px){.bullets li{font-size:1rem}.corner{display:none}}',
+      '@media (max-height:560px){.s-title .subtitle{margin-top:12px}.content{margin-top:16px}}'
+      ].join('\n'),
       /* ----- navigation ----- */
       '.navbar{position:fixed;' + navPos + 'z-index:10;display:flex;align-items:center;gap:14px;',
       '  opacity:var(--nav-opacity);transition:opacity .25s ease}',
@@ -332,15 +342,12 @@
         '.notes-panel p{font-size:.98rem;line-height:1.55;color:var(--text);white-space:pre-wrap}',
         '.notes-panel p.empty{color:var(--muted);font-style:italic}'
       ].join('\n') : '',
-      /* ----- small screens ----- */
+      /* ----- small screens (chrome) ----- */
       '@media (max-width:760px){',
-      '  .slide{padding:3vh 6vw}',
-      '  .bullets li{font-size:1rem}',
+      (forFaithful ? '' : '  .slide{padding:3vh 6vw}'),
       '  .navbar{gap:9px}',
       '  .counter-top{top:12px;right:14px;font-size:.85rem}',
-      '  .corner{display:none}',
-      '}',
-      '@media (max-height:560px){.s-title .subtitle{margin-top:12px}.content{margin-top:16px}}'
+      '}'
     ].filter(Boolean).join('\n');
   }
 
@@ -453,7 +460,7 @@
     parts.push('<meta charset="UTF-8">');
     parts.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
     parts.push('<title>' + esc(opt.title) + '</title>');
-    parts.push('<style>' + css(opt, hasCanvas, !!notesArr) +
+    parts.push('<style>' + css(opt, hasCanvas, !!notesArr, !!faithful) +
       (faithful ? '\n' + faithfulCss(faithful) : '') + '</style>');
     parts.push('</head><body>');
 

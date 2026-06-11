@@ -1,144 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PPTX2HTML</title>
-
-<!-- Bootstrap CSS -->
-<link href="css/bootstrap.min.css" rel="stylesheet">
-
-<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-<!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
-
-<link rel="stylesheet" href="./css/font-awesome.min.css">
-<link rel="stylesheet" href="./css/pptx2html.css">
-
-<script type="text/javascript" src="./js/jquery-1.11.3.min.js"></script>
-<script type="text/javascript" src="./js/FileSaver.min.js"></script>
-<script type="text/javascript" src="./js/lz-string.min.js"></script>
-
+<title>PPTX2HTML — PowerPoint to single-file HTML slideshow</title>
+<meta name="description" content="Convert a PowerPoint (.pptx) into one self-contained HTML slideshow — restyled, animated, offline-ready. Everything happens in your browser.">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📽️</text></svg>">
 </head>
-
 <body>
-	
-	<div class="container">
-		
-		<div class="header">
-			<ul class="nav nav-pills pull-right">
-				<li class="active"><a href="#"><i class="glyphicon glyphicon-home"></i> Home</a></li>
-				<li><a href="https://github.com/g21589/PPTX2HTML"><i class="fa fa-github"></i> Github</a></li>
-			</ul>
-			<h2 class="text-muted">PPTX2HTML</h2>
-		</div>
-		
-		<div class="jumbotron">
-			<h1>PPTX2HTML</h1>
-			<p class="lead">Transform PPTX to HTML</p>
-		</div>
-		
-		<div class="row">
-			<div class="col-md-6 col-md-offset-3" style="text-align: center;">
-				
-				<!-- Split button -->
-				<div class="btn-group">
-				  <div class="fileUpload btn btn-success">
-					<span><i class="glyphicon glyphicon-upload"></i> Choose a PPTX file</span>
-					<input id="uploadBtn" type="file" class="upload" accept="application/vnd.openxmlformats-officedocument.presentationml.presentation"/>
-				  </div>
-				  <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-					<span class="caret"></span>
-					<span class="sr-only">Toggle Dropdown</span>
-				  </button>
-				  <ul class="dropdown-menu">
-					<li><a href="#" data-toggle="modal" data-target="#slideContentModel"><i class="glyphicon glyphicon-search"></i> Raw content of slides</a></li>
-					<li id="download-btn"><a href="#"><i class="glyphicon glyphicon-save-file"></i> Download html</a></li>
-					<li role="separator" class="divider"></li>
-					<li id="to-reveal-btn"><a href="#"><i class="glyphicon glyphicon-export"></i> To Reveal.js slides</a></li>
-					<li id="download-reveal-btn"><a href="#"><i class="glyphicon glyphicon-export"></i> Export to Reveal.js slides</a></li>
-				  </ul>
-				</div>
-				
-				<!-- Modal -->
-				<div class="modal fade" id="slideContentModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-				  <div class="modal-dialog" role="document">
-					<div class="modal-content">
-					  <div class="modal-header">
-						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-						<h4 class="modal-title" id="myModalLabel">Raw content of slides</h4>
-					  </div>
-					  <div class="modal-body">
-					    <div class="form-group">
-						  <label for="comment">Content:</label>
-						  <textarea class="form-control" rows="5" id="comment"></textarea>
-						</div>
-					  </div>
-					  <div class="modal-footer">
-						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-						<button id="download-btn2" type="button" class="btn btn-primary">Download</button>
-					  </div>
-					</div>
-				  </div>
-				</div>
-				
-			</div>
-			
-		</div>
-		
-		<br>
-		
-		<div class="row">
-			<div class="col-md-6 col-md-offset-3" style="text-align: center;">
-				<img id="pptx-thumb" class="img-thumbnail" src="" alt="">
-			</div>
-		</div>
-		
-		<br>
-		
-		<div class="row">
-			<div class="col-lg-12">
-				<div class="progress">
-					<div id="load-progress" class="progress-bar progress-bar-striped" style="transition: none;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-						0%
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<div class="row">
-			<div class="col-lg-12">
-				<div id="error_block" class="alert alert-danger hidden">
-					You will need a recent browser to use this demo :(
-				</div>
-				<div id="info_block" class="alert alert-success" role="alert">
-				
-				</div>
-				<div id="result_block" class="hidden">
-					<h3>Slides:</h3>
-					<div id="result"></div>
-				</div>
-			</div>
-		</div>
-		
-		<div class="footer">
-			<hr>
-			<p>Copyright © 2015 g21589, All Rights Reserved.<br>Contact Person: g21589, E-mail: g21589@gmail.com</p>
-		</div>
-		
-	</div>
 
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script type="text/javascript" src="js/bootstrap.min.js"></script>
-<script type="text/javascript" src="js/pptx2html.js"></script>
+<div class="shell">
 
-<link rel="stylesheet" href="css/nv.d3.min.css">
-<script type="text/javascript" src="js/chart/d3.min.js"></script>
-<script type="text/javascript" src="js/chart/nv.d3.min.js"></script>
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-mark">P»H</div>
+      <div>
+        <h1>PPTX2HTML</h1>
+        <div class="sub">PowerPoint in → one presentable .html out</div>
+      </div>
+    </div>
+    <div class="right">100% in your browser — nothing is uploaded</div>
+  </header>
+
+  <!-- ============ landing ============ -->
+  <section class="landing" id="landing">
+    <div class="hero">
+      <h2>Turn a PowerPoint into a <em>single-file</em> HTML slideshow</h2>
+      <p>Drop in a .pptx and get back one self-contained .html — full-screen slides, keyboard &amp;
+         button navigation, your colors, and a little animated magic in the background.
+         It opens in any browser, works offline, and survives being emailed.</p>
+    </div>
+
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept=".pptx,.ppsx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+      <div class="dz-icon">📽️</div>
+      <div class="dz-title">Drop your .pptx here — or click to browse</div>
+      <div class="dz-hint">.pptx and .ppsx, any size. Your file never leaves this page.</div>
+      <div class="dz-sample"><a href="#" id="sample-link">No deck handy? Try the sample presentation →</a></div>
+    </label>
+
+    <div class="parse-progress" id="parse-progress">
+      <div class="pp-label" id="pp-label">Reading presentation…</div>
+      <div class="pp-rail"><div class="pp-fill" id="pp-fill"></div></div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div class="perks">
+      <div class="perk">
+        <div class="p-icon">🔒</div>
+        <h3>Private by design</h3>
+        <p>The conversion runs entirely in your browser with JavaScript. No upload, no server, no account.</p>
+      </div>
+      <div class="perk">
+        <div class="p-icon">📦</div>
+        <h3>One file, runs anywhere</h3>
+        <p>Fonts, images and navigation are embedded in a single .html. Double-click it, press F11, present.</p>
+      </div>
+      <div class="perk">
+        <div class="p-icon">✨</div>
+        <h3>Fun little graphics</h3>
+        <p>Radar sweeps, starfields, fireflies, confetti — animated canvas backgrounds that show only where you want them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ studio ============ -->
+  <section class="studio" id="studio">
+
+    <aside class="options">
+      <div class="options-head">
+        <h2>⚙︎ Deck options</h2>
+        <button id="reset-options" title="Back to defaults">Reset</button>
+      </div>
+      <div class="options-body">
+
+        <div class="opt-group">
+          <h3>Theme</h3>
+          <div class="field">
+            <div class="swatches" id="theme-swatches"></div>
+          </div>
+          <details>
+            <summary style="font-size:.82rem;color:var(--muted);cursor:pointer">Customize colors…</summary>
+            <div class="custom-colors" id="custom-colors"></div>
+          </details>
+        </div>
+
+        <div class="opt-group">
+          <h3>Typography</h3>
+          <div class="field">
+            <select id="opt-font">
+              <option value="sans">Clean sans-serif (modern)</option>
+              <option value="serif">Elegant serif (editorial)</option>
+              <option value="mono">Typewriter mono (technical)</option>
+            </select>
+            <div class="hint">System font stacks — crisp everywhere, zero file-size cost, fully offline.</div>
+          </div>
+        </div>
+
+        <div class="opt-group">
+          <h3>Navigation buttons</h3>
+          <div class="field">
+            <label class="f-label">Placement</label>
+            <div class="seg" id="opt-placement" data-opts='[["bc","Bottom center"],["bl","Bottom left"],["br","Bottom right"],["tr","Top right"]]'></div>
+          </div>
+          <div class="field">
+            <label class="f-label">Button style</label>
+            <div class="seg" id="opt-shape" data-opts='[["pill","Pill"],["round","Round"],["square","Square"]]'></div>
+          </div>
+          <div class="field">
+            <label class="f-label">Button labels</label>
+            <div class="seg" id="opt-labels" data-opts='[["arrows","Arrows only"],["words","Prev / Next"]]'></div>
+          </div>
+          <div class="field">
+            <label class="f-label">Resting transparency</label>
+            <div class="range-row">
+              <input type="range" id="opt-nav-opacity" min="20" max="100" step="5">
+              <output id="opt-nav-opacity-out">85%</output>
+            </div>
+            <div class="hint">Buttons fade to this opacity, and light up on hover.</div>
+          </div>
+          <label class="check"><input type="checkbox" id="opt-counter"> <span>Slide counter between the buttons</span></label>
+          <label class="check"><input type="checkbox" id="opt-top-counter"> <span>“3 / 16” counter in the top-right corner</span></label>
+          <label class="check"><input type="checkbox" id="opt-progress"> <span>Thin progress bar along the bottom</span></label>
+        </div>
+
+        <div class="opt-group">
+          <h3>Animated background</h3>
+          <div class="field">
+            <select id="opt-effect"></select>
+            <div class="fx-desc" id="fx-desc"></div>
+          </div>
+          <div class="field" id="fx-show-field">
+            <label class="f-label">Where it appears</label>
+            <div class="seg" id="opt-effect-show" data-opts='[["title","Title & sections"],["title-subtle","Featured + subtle"],["all","Every slide"]]'></div>
+            <div class="hint">“Featured + subtle” spotlights title and section slides and keeps a faint version everywhere else.</div>
+          </div>
+          <div class="field" id="fx-intensity-field">
+            <label class="f-label">Intensity</label>
+            <div class="range-row">
+              <input type="range" id="opt-intensity" min="20" max="100" step="5">
+              <output id="opt-intensity-out">70%</output>
+            </div>
+          </div>
+        </div>
+
+        <div class="opt-group">
+          <h3>Motion &amp; extras</h3>
+          <div class="field">
+            <label class="f-label">Slide transition</label>
+            <div class="seg" id="opt-transition" data-opts='[["fade","Fade"],["slide","Slide"],["zoom","Zoom"],["none","None"]]'></div>
+          </div>
+          <label class="check"><input type="checkbox" id="opt-underline"> <span>Animated accent line under titles</span></label>
+          <label class="check"><input type="checkbox" id="opt-corners"> <span>Corner frame on the title slide</span></label>
+          <label class="check" id="notes-check"><input type="checkbox" id="opt-notes"> <span>Include speaker notes <small>press N while presenting to peek at them</small></span></label>
+        </div>
+
+        <div class="opt-group">
+          <h3>Images</h3>
+          <label class="check"><input type="checkbox" id="opt-compress" checked> <span>Compress large images <small>recommended — keeps the file easy to email</small></span></label>
+        </div>
+
+      </div>
+    </aside>
+
+    <div class="preview-col">
+      <div class="preview-bar">
+        <div class="deck-meta">
+          <div class="dm-name" id="deck-name">deck.pptx</div>
+          <div class="dm-stats" id="deck-stats"></div>
+        </div>
+        <div class="preview-actions">
+          <button class="btn" id="open-tab">↗ Full preview</button>
+          <button class="btn primary" id="download">⬇ Download .html</button>
+        </div>
+      </div>
+
+      <div class="preview-frame-wrap">
+        <iframe id="preview" title="Live slideshow preview"></iframe>
+      </div>
+      <div class="preview-tip">
+        Click the preview, then use <kbd>←</kbd> <kbd>→</kbd> <kbd>Space</kbd> <kbd>Home</kbd> <kbd>End</kbd> — or the on-screen buttons. <kbd>F</kbd> = fullscreen<span id="tip-notes">, <kbd>N</kbd> = speaker notes</span>.
+      </div>
+
+      <div class="warnings" id="warnings">
+        <h4>Heads-up — a few things couldn’t come along</h4>
+        <ul id="warnings-list"></ul>
+      </div>
+
+      <div class="upload-another">
+        <button id="upload-another">⤴ Convert a different presentation</button>
+      </div>
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    <p>Everything runs locally in your browser · The exported file is yours alone.</p>
+    <p>Rebuilt from the ground up on the ideas of <a href="https://github.com/g21589/PPTX2HTML" target="_blank" rel="noopener">PPTX2HTML by g21589</a> · MIT licensed.</p>
+  </footer>
+
+</div>
+
+<script src="js/jszip.min.js"></script>
+<script src="js/pptx-extract.js"></script>
+<script src="js/backgrounds.js"></script>
+<script src="js/deck-builder.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>
